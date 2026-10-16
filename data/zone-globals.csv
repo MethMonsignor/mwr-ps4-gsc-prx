@@ -1,0 +1,6 @@
+Global RVA,Width,Observed use
+0x1102BC88,Start of two pool records,"Script allocation pools, stride 0x530."
+0x07E87E70,"1 byte, bit 0",Allocation-context rejection gate.
+0x07E87E68,"1 byte, bit 0",Enables the alternate allocator selector path.
+0x07E87E6C,32-bit selector,Alternate pool index; must be 0 or 1.
+0x0EC998B8,8-byte thread identity,Thread comparison used by that alternate selector. This differs from the script-thread global at 0x0EC99880.

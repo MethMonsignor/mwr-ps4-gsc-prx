@@ -1,0 +1,4 @@
+Role,RVA,Existing PRX contract
+Find DVAR,0x00118520,void *(*FindDvarFn)(const char *name)
+Set DVAR from string,0x00119D50,"void *(*SetDvarStringFn)(const char *name, const char *value, int source)"
+Existing native UI render hook,0x003DB1C0,"void (*RenderUiFn)(int a1, void *a2, int a3, void *a4)"

@@ -1,0 +1,18 @@
+RVA,Access width / interpretation,Use in this implementation or observed engine path
+0x0EC99880,8-byte native thread identity,Expected script-loading/startup thread. Compared with the thread-identity import result.
+0x0EC9D8C8,32-bit VM root ID,One of three required live linking roots. Its exact original field name is not asserted.
+0x0EC9D8CC,32-bit VM root ID,Second linking root.
+0x0EC9D8D0,32-bit VM root ID,Third linking root.
+0x0EC9D8E4,32-bit length,Current allowed VM program range; stock initialization writes 0x200000. It is not the payload's bytecode length.
+0x0EC9D8EA,1-byte flag,"Script loading/linking active. Set at 0x0024511F, cleared at 0x002474B4."
+0x0F79E068,8-byte pointer,VM program base P. Used to convert function pointers to/from code handles.
+0x0F79E020,32-bit VM object ID,Current level self object for startup execution.
+0x0AFE9CB8,32-bit code handle,Optional stock map-main handle.
+0x0AFE9CF0,32-bit code handle,Stock start-gametype callback handle.
+0x0ACFE8B0,32-bit flag,"Precaching allowed. Set at 0x00671AB7, cleared at 0x0067A6A5."
+0x0EC9D8F0,Array of 8-byte function pointers,VM builtin-function dispatch: index builtinId - 1.
+0x0EC9F130,Array of 8-byte function pointers,VM builtin-method dispatch: index builtinId - 0x8000.
+0x0F7C6E28,8-byte VM stack pointer,"Current native argument/result stack position, observed in native dispatch/getters. Not written directly by the loader."
+0x0F7C6E34,32-bit argument count,Set by builtin dispatch and read by argument getters. Not an entrypoint the PRX uses to fabricate calls.
+0x0ECA1D58,8-byte pointer,Interned-string storage base used by observed string-token consumers.
+0x00B8CD64,Table of signed 32-bit relative displacements,Opcode dispatch table; entry index is opcode - 0x1D.

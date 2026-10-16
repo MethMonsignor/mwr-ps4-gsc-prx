@@ -1,0 +1,1576 @@
+{
+  "schema_version": 1,
+  "source": "docs/reference.md",
+  "source_sha256": "945e08025ebe064a1862dd1bdfc33826546a350dafddeaccc74e5b5539008a63",
+  "image_identity": {
+    "Executable": "Supplied default_mp.elf",
+    "Platform": "PS4, x86-64, little-endian",
+    "Target": "MWR multiplayer 1.15, CUSA05379",
+    "File size": "13,704,058 bytes",
+    "ELF SHA-256": "450b0586c88babbd760f11f18f11dde18862629cd127a865f5ed662c730e2540",
+    "Reference source": "Reviewed PRX integration source, revision 2.25.10"
+  },
+  "interpretation": [
+    "All table values are strings; hexadecimal addresses and IDs preserve source notation.",
+    "RVAs are relative to the target engine image; script handles use the VM program base.",
+    "Local labels are descriptive, not recovered original engine symbols.",
+    "Typedefs are contracts used by the reviewed PRX, not a reconstructed original SDK.",
+    "Builtin callbacks use VM argument state; opcode handlers are internal interpreter labels.",
+    "The tables are an index. Read the corresponding reference section for qualifications."
+  ],
+  "tables": {
+    "loader-functions": [
+      {
+        "Engine role / conventional description": "Find asset header, DB_FindXAssetHeader-like",
+        "RVA": "0x005B6590",
+        "Neutral typedef / call label": "FindAssetHeaderFn",
+        "Use": "Detoured by asset_lookup_hook; returns the private descriptor when eligible.",
+        "PRX typedef contract": "typedef void *(*FindAssetHeaderFn)( int assetType, const char *name, int allowDefault);"
+      },
+      {
+        "Engine role / conventional description": "Check default/missing asset",
+        "RVA": "0x005B6E60",
+        "Neutral typedef / call label": "IsDefaultAssetFn",
+        "Use": "Detoured by asset_default_hook; returns 0 for the private load only.",
+        "PRX typedef contract": "typedef int (*IsDefaultAssetFn)(int assetType, const char *name);"
+      },
+      {
+        "Engine role / conventional description": "Load/link script, Scr_LoadScript-like",
+        "RVA": "0x007DAC10",
+        "Neutral typedef / call label": "LoadScriptFn",
+        "Use": "Detoured by load_script_hook; stock and custom calls use the original-function stub.",
+        "PRX typedef contract": "typedef uint32_t (*LoadScriptFn)( const char *scriptName, void *callerScratch, uint32_t depth);"
+      },
+      {
+        "Engine role / conventional description": "Resolve script function handle",
+        "RVA": "0x007DA7E0",
+        "Neutral typedef / call label": "GetFunctionHandleFn, get_function_handle",
+        "Use": "Direct call after custom linking; lookup by script name and canonical token.",
+        "PRX typedef contract": "typedef uint32_t (*GetFunctionHandleFn)( const char *scriptName, uint32_t canonicalFunctionToken);"
+      },
+      {
+        "Engine role / conventional description": "Execute script thread with self object",
+        "RVA": "0x007E28C0",
+        "Neutral typedef / call label": "ExecuteThreadFn",
+        "Use": "Detoured by exec_thread_hook; launches the private main.",
+        "PRX typedef contract": "typedef uint16_t (*ExecuteThreadFn)( uint32_t codeOffset, uint32_t selfObject, uint32_t argumentCount);"
+      },
+      {
+        "Engine role / conventional description": "Remove VM object reference, RemoveRefToObject-like",
+        "RVA": "0x007DF9E0",
+        "Neutral typedef / call label": "RemoveObjectReferenceFn, remove_object_reference",
+        "Use": "Direct call to release the custom returned thread-object reference. Also used by stock code on other VM objects.",
+        "PRX typedef contract": "typedef void (*RemoveObjectReferenceFn)(uint32_t objectId);"
+      },
+      {
+        "Engine role / conventional description": "Native thread-identity import thunk",
+        "RVA": "0x00B17270",
+        "Neutral typedef / call label": "CurrentThreadIdFn, current_thread_id",
+        "Use": "Direct call for engine-thread checks and allocator selection. Exact imported API name is not established here.",
+        "PRX typedef contract": "typedef uintptr_t (*CurrentThreadIdFn)(void);"
+      },
+      {
+        "Engine role / conventional description": "Zone load routine",
+        "RVA": "0x00569F30",
+        "Neutral typedef / call label": "LoadZoneFn",
+        "Use": "Detoured by zone_load_hook; reservation follows normal return.",
+        "PRX typedef contract": "typedef void (*LoadZoneFn)(void *blocks, void *zone);"
+      },
+      {
+        "Engine role / conventional description": "Zone allocator",
+        "RVA": "0x008C69A0",
+        "Neutral typedef / call label": "AllocateZoneMemoryFn",
+        "Use": "Direct call with (capacity, 16, 0, 5).",
+        "PRX typedef contract": "typedef void *(*AllocateZoneMemoryFn)( size_t size, size_t alignment, int physicalType, int allocationType);"
+      },
+      {
+        "Engine role / conventional description": "Pool owner release",
+        "RVA": "0x008C6D20",
+        "Neutral typedef / call label": "ReleasePoolOwnerFn",
+        "Use": "Detoured by pool_release_hook; invalidates owned state before normal release.",
+        "PRX typedef contract": "typedef void (*ReleasePoolOwnerFn)( void *pools, void *owner, unsigned poolIndex);"
+      }
+    ],
+    "dvar-functions": [
+      {
+        "Role": "Find DVAR",
+        "RVA": "0x00118520",
+        "Existing PRX contract": "void *(*FindDvarFn)(const char *name)"
+      },
+      {
+        "Role": "Set DVAR from string",
+        "RVA": "0x00119D50",
+        "Existing PRX contract": "void *(*SetDvarStringFn)(const char *name, const char *value, int source)"
+      },
+      {
+        "Role": "Existing native UI render hook",
+        "RVA": "0x003DB1C0",
+        "Existing PRX contract": "void (*RenderUiFn)(int a1, void *a2, int a3, void *a4)"
+      }
+    ],
+    "native-signatures": [
+      {
+        "Manifest label": "load_script",
+        "RVA": "0x007DAC10",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 81 EC 88 00 00 00",
+        "Length": "20"
+      },
+      {
+        "Manifest label": "execute_thread",
+        "RVA": "0x007E28C0",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 54 53 48 83 EC 10",
+        "Length": "15"
+      },
+      {
+        "Manifest label": "asset_is_default",
+        "RVA": "0x005B6E60",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 55 41 54 53 50",
+        "Length": "14"
+      },
+      {
+        "Manifest label": "get_function_handle",
+        "RVA": "0x007DA7E0",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 54 53 41 89 F4",
+        "Length": "14"
+      },
+      {
+        "Manifest label": "remove_thread_reference",
+        "RVA": "0x007DF9E0",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC 28",
+        "Length": "17"
+      },
+      {
+        "Manifest label": "first_mp_script_call",
+        "RVA": "0x0024568C",
+        "Bytes": "E8 7F 55 59 00 89 C3",
+        "Length": "7"
+      },
+      {
+        "Manifest label": "map_main_call",
+        "RVA": "0x00679C93",
+        "Bytes": "E8 28 8C 16 00 0F B7 F8",
+        "Length": "8"
+      },
+      {
+        "Manifest label": "start_gametype_call",
+        "RVA": "0x00679CAE",
+        "Bytes": "E8 0D 8C 16 00 0F B7 F8",
+        "Length": "8"
+      },
+      {
+        "Manifest label": "thread_identity_import",
+        "RVA": "0x00B17270",
+        "Bytes": "FF 25 72 BE 15 00",
+        "Length": "6"
+      },
+      {
+        "Manifest label": "find_asset",
+        "RVA": "0x005B6590",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC 28",
+        "Length": "17"
+      },
+      {
+        "Manifest label": "zone_load",
+        "RVA": "0x00569F30",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 81 EC C8 00 00 00",
+        "Length": "20"
+      },
+      {
+        "Manifest label": "zone_release",
+        "RVA": "0x008C6D20",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC 18",
+        "Length": "17"
+      },
+      {
+        "Manifest label": "zone_allocator",
+        "RVA": "0x008C69A0",
+        "Bytes": "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC 28",
+        "Length": "17"
+      }
+    ],
+    "engine-globals": [
+      {
+        "RVA": "0x0EC99880",
+        "Access width / interpretation": "8-byte native thread identity",
+        "Use in this implementation or observed engine path": "Expected script-loading/startup thread. Compared with the thread-identity import result."
+      },
+      {
+        "RVA": "0x0EC9D8C8",
+        "Access width / interpretation": "32-bit VM root ID",
+        "Use in this implementation or observed engine path": "One of three required live linking roots. Its exact original field name is not asserted."
+      },
+      {
+        "RVA": "0x0EC9D8CC",
+        "Access width / interpretation": "32-bit VM root ID",
+        "Use in this implementation or observed engine path": "Second linking root."
+      },
+      {
+        "RVA": "0x0EC9D8D0",
+        "Access width / interpretation": "32-bit VM root ID",
+        "Use in this implementation or observed engine path": "Third linking root."
+      },
+      {
+        "RVA": "0x0EC9D8E4",
+        "Access width / interpretation": "32-bit length",
+        "Use in this implementation or observed engine path": "Current allowed VM program range; stock initialization writes 0x200000. It is not the payload's bytecode length."
+      },
+      {
+        "RVA": "0x0EC9D8EA",
+        "Access width / interpretation": "1-byte flag",
+        "Use in this implementation or observed engine path": "Script loading/linking active. Set at 0x0024511F, cleared at 0x002474B4."
+      },
+      {
+        "RVA": "0x0F79E068",
+        "Access width / interpretation": "8-byte pointer",
+        "Use in this implementation or observed engine path": "VM program base P. Used to convert function pointers to/from code handles."
+      },
+      {
+        "RVA": "0x0F79E020",
+        "Access width / interpretation": "32-bit VM object ID",
+        "Use in this implementation or observed engine path": "Current level self object for startup execution."
+      },
+      {
+        "RVA": "0x0AFE9CB8",
+        "Access width / interpretation": "32-bit code handle",
+        "Use in this implementation or observed engine path": "Optional stock map-main handle."
+      },
+      {
+        "RVA": "0x0AFE9CF0",
+        "Access width / interpretation": "32-bit code handle",
+        "Use in this implementation or observed engine path": "Stock start-gametype callback handle."
+      },
+      {
+        "RVA": "0x0ACFE8B0",
+        "Access width / interpretation": "32-bit flag",
+        "Use in this implementation or observed engine path": "Precaching allowed. Set at 0x00671AB7, cleared at 0x0067A6A5."
+      },
+      {
+        "RVA": "0x0EC9D8F0",
+        "Access width / interpretation": "Array of 8-byte function pointers",
+        "Use in this implementation or observed engine path": "VM builtin-function dispatch: index builtinId - 1."
+      },
+      {
+        "RVA": "0x0EC9F130",
+        "Access width / interpretation": "Array of 8-byte function pointers",
+        "Use in this implementation or observed engine path": "VM builtin-method dispatch: index builtinId - 0x8000."
+      },
+      {
+        "RVA": "0x0F7C6E28",
+        "Access width / interpretation": "8-byte VM stack pointer",
+        "Use in this implementation or observed engine path": "Current native argument/result stack position, observed in native dispatch/getters. Not written directly by the loader."
+      },
+      {
+        "RVA": "0x0F7C6E34",
+        "Access width / interpretation": "32-bit argument count",
+        "Use in this implementation or observed engine path": "Set by builtin dispatch and read by argument getters. Not an entrypoint the PRX uses to fabricate calls."
+      },
+      {
+        "RVA": "0x0ECA1D58",
+        "Access width / interpretation": "8-byte pointer",
+        "Use in this implementation or observed engine path": "Interned-string storage base used by observed string-token consumers."
+      },
+      {
+        "RVA": "0x00B8CD64",
+        "Access width / interpretation": "Table of signed 32-bit relative displacements",
+        "Use in this implementation or observed engine path": "Opcode dispatch table; entry index is opcode - 0x1D."
+      }
+    ],
+    "zone-globals": [
+      {
+        "Global RVA": "0x1102BC88",
+        "Width": "Start of two pool records",
+        "Observed use": "Script allocation pools, stride 0x530."
+      },
+      {
+        "Global RVA": "0x07E87E70",
+        "Width": "1 byte, bit 0",
+        "Observed use": "Allocation-context rejection gate."
+      },
+      {
+        "Global RVA": "0x07E87E68",
+        "Width": "1 byte, bit 0",
+        "Observed use": "Enables the alternate allocator selector path."
+      },
+      {
+        "Global RVA": "0x07E87E6C",
+        "Width": "32-bit selector",
+        "Observed use": "Alternate pool index; must be 0 or 1."
+      },
+      {
+        "Global RVA": "0x0EC998B8",
+        "Width": "8-byte thread identity",
+        "Observed use": "Thread comparison used by that alternate selector. This differs from the script-thread global at 0x0EC99880."
+      }
+    ],
+    "builtins": [
+      {
+        "GSC binding": "isdefined",
+        "Console ID": "0x0012",
+        "Kind": "Function",
+        "Native RVA": "0x006A6450",
+        "Registration RVA": "0x00C60860",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setdvar",
+        "Console ID": "0x0017",
+        "Kind": "Function",
+        "Native RVA": "0x006A7200",
+        "Registration RVA": "0x00C608D0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getdvar",
+        "Console ID": "0x001C",
+        "Kind": "Function",
+        "Native RVA": "0x006A7940",
+        "Registration RVA": "0x00C60920",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getdvarint",
+        "Console ID": "0x001D",
+        "Kind": "Function",
+        "Native RVA": "0x006A7B30",
+        "Registration RVA": "0x00C60930",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getdvarfloat",
+        "Console ID": "0x001E",
+        "Kind": "Function",
+        "Native RVA": "0x006A7DC0",
+        "Registration RVA": "0x00C60940",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getentbynum",
+        "Console ID": "0x0023",
+        "Kind": "Function",
+        "Native RVA": "0x006A8500",
+        "Registration RVA": "0x00C60990",
+        "Flags": "1"
+      },
+      {
+        "GSC binding": "spawn",
+        "Console ID": "0x0030",
+        "Kind": "Function",
+        "Native RVA": "0x006A9920",
+        "Registration RVA": "0x00C60A60",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setslowmotion",
+        "Console ID": "0x003D",
+        "Kind": "Function",
+        "Native RVA": "0x006AB620",
+        "Registration RVA": "0x00C60B60",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "int",
+        "Console ID": "0x0048",
+        "Kind": "Function",
+        "Native RVA": "0x006AC410",
+        "Registration RVA": "0x00C60C20",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "anglestoforward",
+        "Console ID": "0x006A",
+        "Kind": "Function",
+        "Native RVA": "0x006AF6C0",
+        "Registration RVA": "0x00C60EA0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getsubstr",
+        "Console ID": "0x0072",
+        "Kind": "Function",
+        "Native RVA": "0x006B1740",
+        "Registration RVA": "0x00C60F80",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "precacheitem",
+        "Console ID": "0x007A",
+        "Kind": "Function",
+        "Native RVA": "0x006B2C10",
+        "Registration RVA": "0x00C61010",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "precacheshader",
+        "Console ID": "0x007B",
+        "Kind": "Function",
+        "Native RVA": "0x006B2CB0",
+        "Registration RVA": "0x00C61020",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "tablelookup",
+        "Console ID": "0x00C6",
+        "Kind": "Function",
+        "Native RVA": "0x006BF120",
+        "Registration RVA": "0x00C616A0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "tablelookupbyrow",
+        "Console ID": "0x00C7",
+        "Kind": "Function",
+        "Native RVA": "0x006BF3C0",
+        "Registration RVA": "0x00C616C0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getentarray",
+        "Console ID": "0x00EE",
+        "Kind": "Function",
+        "Native RVA": "0x006F5E60",
+        "Registration RVA": "0x00C4DEC0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "newclienthudelem",
+        "Console ID": "0x00FC",
+        "Kind": "Function",
+        "Native RVA": "0x006651A0",
+        "Registration RVA": "0x00C4DFE0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "map_restart",
+        "Console ID": "0x0113",
+        "Kind": "Function",
+        "Native RVA": "0x00357FA0",
+        "Registration RVA": "0x00C4E1A0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "exitlevel",
+        "Console ID": "0x0114",
+        "Kind": "Function",
+        "Native RVA": "0x00358060",
+        "Registration RVA": "0x00C4E1B0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "isbot",
+        "Console ID": "0x01FC",
+        "Kind": "Function",
+        "Native RVA": "0x00838070",
+        "Registration RVA": "0x00C4E770",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getrankforxp",
+        "Console ID": "0x02EA",
+        "Kind": "Function",
+        "Native RVA": "0x00361F60",
+        "Registration RVA": "0x00C4E9F0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "attach",
+        "Console ID": "0x8000",
+        "Kind": "Method",
+        "Native RVA": "0x006CD6F0",
+        "Registration RVA": "0x00C61EF0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "detachall",
+        "Console ID": "0x8002",
+        "Kind": "Method",
+        "Native RVA": "0x006CDF50",
+        "Registration RVA": "0x00C61F20",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getattachsize",
+        "Console ID": "0x8003",
+        "Kind": "Method",
+        "Native RVA": "0x006CE8A0",
+        "Registration RVA": "0x00C61F40",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getattachmodelname",
+        "Console ID": "0x8004",
+        "Kind": "Method",
+        "Native RVA": "0x006CEB10",
+        "Registration RVA": "0x00C61F50",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getattachtagname",
+        "Console ID": "0x8005",
+        "Kind": "Method",
+        "Native RVA": "0x006CECA0",
+        "Registration RVA": "0x00C61F60",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getattachignorecollision",
+        "Console ID": "0x8006",
+        "Kind": "Method",
+        "Native RVA": "0x006CEEF0",
+        "Registration RVA": "0x00C61F70",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "unlink",
+        "Console ID": "0x800E",
+        "Kind": "Method",
+        "Native RVA": "0x006D0150",
+        "Registration RVA": "0x00C62000",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "islinked",
+        "Console ID": "0x800F",
+        "Kind": "Method",
+        "Native RVA": "0x006D0210",
+        "Registration RVA": "0x00C62010",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "playerlinkto",
+        "Console ID": "0x8011",
+        "Kind": "Method",
+        "Native RVA": "0x006D0B10",
+        "Registration RVA": "0x00C62080",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "delete",
+        "Console ID": "0x8028",
+        "Kind": "Method",
+        "Native RVA": "0x006D38A0",
+        "Registration RVA": "0x00C621E0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setmodel",
+        "Console ID": "0x8029",
+        "Kind": "Method",
+        "Native RVA": "0x006D3A50",
+        "Registration RVA": "0x00C62200",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setmovespeedscale",
+        "Console ID": "0x808C",
+        "Kind": "Method",
+        "Native RVA": "0x006DBF20",
+        "Registration RVA": "0x00C629C0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getlocalplayerprofiledata",
+        "Console ID": "0x809D",
+        "Kind": "Method",
+        "Native RVA": "0x006DD610",
+        "Registration RVA": "0x00C62B70",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setlocalplayerprofiledata",
+        "Console ID": "0x809E",
+        "Kind": "Method",
+        "Native RVA": "0x006DDAF0",
+        "Registration RVA": "0x00C62B80",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "isitemunlocked",
+        "Console ID": "0x80B0",
+        "Kind": "Method",
+        "Native RVA": "0x006E1440",
+        "Registration RVA": "0x00C62CA0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getplayerdata",
+        "Console ID": "0x80B1",
+        "Kind": "Method",
+        "Native RVA": "0x006E1D60",
+        "Registration RVA": "0x00C62CB0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setplayerdata",
+        "Console ID": "0x80B2",
+        "Kind": "Method",
+        "Native RVA": "0x006E21E0",
+        "Registration RVA": "0x00C62CC0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setrank",
+        "Console ID": "0x80D3",
+        "Kind": "Method",
+        "Native RVA": "0x00658180",
+        "Registration RVA": "0x00C5F500",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "fragbuttonpressed",
+        "Console ID": "0x80E7",
+        "Kind": "Method",
+        "Native RVA": "0x0063EED0",
+        "Registration RVA": "0x00C5DF30",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "secondaryoffhandbuttonpressed",
+        "Console ID": "0x80E8",
+        "Kind": "Method",
+        "Native RVA": "0x0063F0D0",
+        "Registration RVA": "0x00C5DF40",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setvelocity",
+        "Console ID": "0x80EA",
+        "Kind": "Method",
+        "Native RVA": "0x0063F550",
+        "Registration RVA": "0x00C5DF60",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "giveweapon",
+        "Console ID": "0x80EE",
+        "Kind": "Method",
+        "Native RVA": "0x0063FAA0",
+        "Registration RVA": "0x00C5DFF0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "takeweapon",
+        "Console ID": "0x80EF",
+        "Kind": "Method",
+        "Native RVA": "0x0063FF90",
+        "Registration RVA": "0x00C5E000",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getcurrentweapon",
+        "Console ID": "0x80F1",
+        "Kind": "Method",
+        "Native RVA": "0x00640380",
+        "Registration RVA": "0x00C5E020",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "hasweapon",
+        "Console ID": "0x80F4",
+        "Kind": "Method",
+        "Native RVA": "0x006406D0",
+        "Registration RVA": "0x00C5E050",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "switchtoweapon",
+        "Console ID": "0x80F5",
+        "Kind": "Method",
+        "Native RVA": "0x00640A80",
+        "Registration RVA": "0x00C5E060",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "givemaxammo",
+        "Console ID": "0x80F9",
+        "Kind": "Method",
+        "Native RVA": "0x006425B0",
+        "Registration RVA": "0x00C5E0F0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setorigin",
+        "Console ID": "0x8100",
+        "Kind": "Method",
+        "Native RVA": "0x006443E0",
+        "Registration RVA": "0x00C5E1A0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getvelocity",
+        "Console ID": "0x8101",
+        "Kind": "Method",
+        "Native RVA": "0x00644880",
+        "Registration RVA": "0x00C5E1B0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getplayerangles",
+        "Console ID": "0x8103",
+        "Kind": "Method",
+        "Native RVA": "0x00644A30",
+        "Registration RVA": "0x00C5E1D0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "usebuttonpressed",
+        "Console ID": "0x8104",
+        "Kind": "Method",
+        "Native RVA": "0x00644D10",
+        "Registration RVA": "0x00C5E200",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "attackbuttonpressed",
+        "Console ID": "0x8105",
+        "Kind": "Method",
+        "Native RVA": "0x00644F10",
+        "Registration RVA": "0x00C5E210",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "adsbuttonpressed",
+        "Console ID": "0x8106",
+        "Kind": "Method",
+        "Native RVA": "0x00645110",
+        "Registration RVA": "0x00C5E220",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "meleebuttonpressed",
+        "Console ID": "0x8107",
+        "Kind": "Method",
+        "Native RVA": "0x00645310",
+        "Registration RVA": "0x00C5E230",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "disableweapons",
+        "Console ID": "0x8112",
+        "Kind": "Method",
+        "Native RVA": "0x006467D0",
+        "Registration RVA": "0x00C5E300",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "enableweapons",
+        "Console ID": "0x8113",
+        "Kind": "Method",
+        "Native RVA": "0x00646820",
+        "Registration RVA": "0x00C5E310",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "disableoffhandweapons",
+        "Console ID": "0x8114",
+        "Kind": "Method",
+        "Native RVA": "0x00646870",
+        "Registration RVA": "0x00C5E320",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "enableoffhandweapons",
+        "Console ID": "0x8115",
+        "Kind": "Method",
+        "Native RVA": "0x006468C0",
+        "Registration RVA": "0x00C5E330",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "freezecontrols",
+        "Console ID": "0x811E",
+        "Kind": "Method",
+        "Native RVA": "0x006476C0",
+        "Registration RVA": "0x00C5E3F0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setclientomnvar",
+        "Console ID": "0x812D",
+        "Kind": "Method",
+        "Native RVA": "0x00649C30",
+        "Registration RVA": "0x00C5E500",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setperk",
+        "Console ID": "0x815C",
+        "Kind": "Method",
+        "Native RVA": "0x00650150",
+        "Registration RVA": "0x00C5F0F0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "hasperk",
+        "Console ID": "0x815D",
+        "Kind": "Method",
+        "Native RVA": "0x00650590",
+        "Registration RVA": "0x00C5F100",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "unsetperk",
+        "Console ID": "0x815F",
+        "Kind": "Method",
+        "Native RVA": "0x00650B70",
+        "Registration RVA": "0x00C5F120",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "settext",
+        "Console ID": "0x82A4",
+        "Kind": "Method",
+        "Native RVA": "0x00666D10",
+        "Registration RVA": "0x00C5FDB0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setshader",
+        "Console ID": "0x82A6",
+        "Kind": "Method",
+        "Native RVA": "0x00666E60",
+        "Registration RVA": "0x00C5FDD0",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "destroy",
+        "Console ID": "0x82BA",
+        "Kind": "Method",
+        "Native RVA": "0x00668000",
+        "Registration RVA": "0x00C5FF50",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "getlinkedparent",
+        "Console ID": "0x83E6",
+        "Kind": "Method",
+        "Native RVA": "0x006D0330",
+        "Registration RVA": "0x00C62020",
+        "Flags": "0"
+      },
+      {
+        "GSC binding": "setcostumemodels",
+        "Console ID": "0x84B2",
+        "Kind": "Method",
+        "Native RVA": "0x006E5760",
+        "Registration RVA": "0x00C62FA0",
+        "Flags": "0"
+      }
+    ],
+    "opcodes": [
+      {
+        "Opcode": "0x1D",
+        "Profile name": "OP_CastFieldObject",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EADE1"
+      },
+      {
+        "Opcode": "0x1E",
+        "Profile name": "OP_SetLocalVariableFieldCached",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007EA987"
+      },
+      {
+        "Opcode": "0x1F",
+        "Profile name": "OP_plus",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAB6A"
+      },
+      {
+        "Opcode": "0x20",
+        "Profile name": "OP_RemoveLocalVariables",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E890F"
+      },
+      {
+        "Opcode": "0x21",
+        "Profile name": "OP_EvalSelfFieldVariableRef",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007E8DD2"
+      },
+      {
+        "Opcode": "0x23",
+        "Profile name": "OP_GetGameRef",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8DE9"
+      },
+      {
+        "Opcode": "0x25",
+        "Profile name": "OP_EvalLevelFieldVariableRef",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007E89CE"
+      },
+      {
+        "Opcode": "0x27",
+        "Profile name": "OP_greater",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EB33B"
+      },
+      {
+        "Opcode": "0x2A",
+        "Profile name": "OP_dec",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EBDA7"
+      },
+      {
+        "Opcode": "0x2B",
+        "Profile name": "OP_JumpOnTrue",
+        "Width": "3",
+        "Kind": "6",
+        "Handler RVA": "0x007EAB45"
+      },
+      {
+        "Opcode": "0x2D",
+        "Profile name": "OP_equality",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EA9F4"
+      },
+      {
+        "Opcode": "0x30",
+        "Profile name": "OP_GetVector",
+        "Width": "13",
+        "Kind": "0",
+        "Handler RVA": "0x007E8E88"
+      },
+      {
+        "Opcode": "0x32",
+        "Profile name": "OP_PreScriptCall",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8559"
+      },
+      {
+        "Opcode": "0x33",
+        "Profile name": "OP_GetByte",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E85A4"
+      },
+      {
+        "Opcode": "0x35",
+        "Profile name": "OP_SetSelfFieldVariableField",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007EB3BF"
+      },
+      {
+        "Opcode": "0x36",
+        "Profile name": "OP_JumpOnFalseExpr",
+        "Width": "3",
+        "Kind": "6",
+        "Handler RVA": "0x007E8373"
+      },
+      {
+        "Opcode": "0x37",
+        "Profile name": "OP_GetUndefined",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8F48"
+      },
+      {
+        "Opcode": "0x38",
+        "Profile name": "OP_jumpback",
+        "Width": "3",
+        "Kind": "7",
+        "Handler RVA": "0x007E829E"
+      },
+      {
+        "Opcode": "0x39",
+        "Profile name": "OP_JumpOnTrueExpr",
+        "Width": "3",
+        "Kind": "6",
+        "Handler RVA": "0x007E8684"
+      },
+      {
+        "Opcode": "0x3A",
+        "Profile name": "OP_CallBuiltin0",
+        "Width": "3",
+        "Kind": "3",
+        "Handler RVA": "0x007E8107"
+      },
+      {
+        "Opcode": "0x3B",
+        "Profile name": "OP_CallBuiltin1",
+        "Width": "3",
+        "Kind": "3",
+        "Handler RVA": "0x007E8107"
+      },
+      {
+        "Opcode": "0x3C",
+        "Profile name": "OP_CallBuiltin2",
+        "Width": "3",
+        "Kind": "3",
+        "Handler RVA": "0x007E8107"
+      },
+      {
+        "Opcode": "0x3D",
+        "Profile name": "OP_CallBuiltin3",
+        "Width": "3",
+        "Kind": "3",
+        "Handler RVA": "0x007E8107"
+      },
+      {
+        "Opcode": "0x3E",
+        "Profile name": "OP_CallBuiltin4",
+        "Width": "3",
+        "Kind": "3",
+        "Handler RVA": "0x007E8107"
+      },
+      {
+        "Opcode": "0x41",
+        "Profile name": "OP_SetLocalVariableFieldCached0",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAAE9"
+      },
+      {
+        "Opcode": "0x42",
+        "Profile name": "OP_ClearFieldVariable",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007E8B10"
+      },
+      {
+        "Opcode": "0x43",
+        "Profile name": "OP_GetLevel",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8E3D"
+      },
+      {
+        "Opcode": "0x44",
+        "Profile name": "OP_size",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E86BE"
+      },
+      {
+        "Opcode": "0x47",
+        "Profile name": "OP_AddArray",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EBDFB"
+      },
+      {
+        "Opcode": "0x49",
+        "Profile name": "OP_EvalFieldVariable",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007E8474"
+      },
+      {
+        "Opcode": "0x4C",
+        "Profile name": "OP_Return",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E839E"
+      },
+      {
+        "Opcode": "0x4D",
+        "Profile name": "OP_CreateLocalVariable",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E8893"
+      },
+      {
+        "Opcode": "0x50",
+        "Profile name": "OP_ScriptLocalMethodCall",
+        "Width": "4",
+        "Kind": "5",
+        "Handler RVA": "0x007EA361"
+      },
+      {
+        "Opcode": "0x53",
+        "Profile name": "OP_GetSelfObject",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8C24"
+      },
+      {
+        "Opcode": "0x55",
+        "Profile name": "OP_SetLevelFieldVariableField",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007EAE4E"
+      },
+      {
+        "Opcode": "0x56",
+        "Profile name": "OP_EvalArray",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAF03"
+      },
+      {
+        "Opcode": "0x57",
+        "Profile name": "OP_GetSelf",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E873C"
+      },
+      {
+        "Opcode": "0x58",
+        "Profile name": "OP_End",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8773"
+      },
+      {
+        "Opcode": "0x59",
+        "Profile name": "OP_EvalSelfFieldVariable",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007E8449"
+      },
+      {
+        "Opcode": "0x5B",
+        "Profile name": "OP_EvalLocalVariableCached0",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E80D8"
+      },
+      {
+        "Opcode": "0x5C",
+        "Profile name": "OP_EvalLocalVariableCached1",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8529"
+      },
+      {
+        "Opcode": "0x5D",
+        "Profile name": "OP_EvalLocalVariableCached2",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E83FB"
+      },
+      {
+        "Opcode": "0x5E",
+        "Profile name": "OP_EvalLocalVariableCached3",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8863"
+      },
+      {
+        "Opcode": "0x5F",
+        "Profile name": "OP_EvalLocalVariableCached4",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8A22"
+      },
+      {
+        "Opcode": "0x60",
+        "Profile name": "OP_EvalLocalVariableCached5",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E89A1"
+      },
+      {
+        "Opcode": "0x61",
+        "Profile name": "OP_EvalLocalVariableCached",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E84AA"
+      },
+      {
+        "Opcode": "0x64",
+        "Profile name": "OP_EvalLocalVariableObjectCached",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E81C9"
+      },
+      {
+        "Opcode": "0x65",
+        "Profile name": "OP_ScriptLocalThreadCall",
+        "Width": "5",
+        "Kind": "5",
+        "Handler RVA": "0x007EA3F6"
+      },
+      {
+        "Opcode": "0x66",
+        "Profile name": "OP_GetInteger",
+        "Width": "5",
+        "Kind": "0",
+        "Handler RVA": "0x007E94BA"
+      },
+      {
+        "Opcode": "0x67",
+        "Profile name": "OP_ScriptMethodCallPointer",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E94E0"
+      },
+      {
+        "Opcode": "0x68",
+        "Profile name": "OP_checkclearparams",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8281"
+      },
+      {
+        "Opcode": "0x6B",
+        "Profile name": "OP_minus",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EB162"
+      },
+      {
+        "Opcode": "0x6C",
+        "Profile name": "OP_ScriptLocalFunctionCall2",
+        "Width": "4",
+        "Kind": "5",
+        "Handler RVA": "0x007E85CB"
+      },
+      {
+        "Opcode": "0x6E",
+        "Profile name": "OP_GetNegByte",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E8D59"
+      },
+      {
+        "Opcode": "0x6F",
+        "Profile name": "OP_SafeCreateVariableFieldCached",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E8327"
+      },
+      {
+        "Opcode": "0x70",
+        "Profile name": "OP_greater_equal",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAD26"
+      },
+      {
+        "Opcode": "0x71",
+        "Profile name": "OP_vector",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E923D"
+      },
+      {
+        "Opcode": "0x74",
+        "Profile name": "OP_ClearArray",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EBA41"
+      },
+      {
+        "Opcode": "0x75",
+        "Profile name": "OP_DecTop",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAD55"
+      },
+      {
+        "Opcode": "0x76",
+        "Profile name": "OP_CastBool",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E842B"
+      },
+      {
+        "Opcode": "0x77",
+        "Profile name": "OP_EvalArrayRef",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EB1CF"
+      },
+      {
+        "Opcode": "0x78",
+        "Profile name": "OP_SetNewLocalVariableFieldCached0",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007EAAB4"
+      },
+      {
+        "Opcode": "0x79",
+        "Profile name": "OP_GetZero",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E825B"
+      },
+      {
+        "Opcode": "0x7A",
+        "Profile name": "OP_wait",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E9705"
+      },
+      {
+        "Opcode": "0x7B",
+        "Profile name": "OP_waittill",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E9BC7"
+      },
+      {
+        "Opcode": "0x80",
+        "Profile name": "OP_EvalLocalArrayCached",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007EAA09"
+      },
+      {
+        "Opcode": "0x83",
+        "Profile name": "OP_GetUnsignedShort",
+        "Width": "3",
+        "Kind": "0",
+        "Handler RVA": "0x007E8AE4"
+      },
+      {
+        "Opcode": "0x84",
+        "Profile name": "OP_clearparams",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E90D3"
+      },
+      {
+        "Opcode": "0x87",
+        "Profile name": "OP_EmptyArray",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E8BDE"
+      },
+      {
+        "Opcode": "0x8A",
+        "Profile name": "OP_EvalFieldVariableRef",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007E89DB"
+      },
+      {
+        "Opcode": "0x8D",
+        "Profile name": "OP_GetFloat",
+        "Width": "5",
+        "Kind": "0",
+        "Handler RVA": "0x007E8577"
+      },
+      {
+        "Opcode": "0x8E",
+        "Profile name": "OP_EvalLocalVariableRefCached",
+        "Width": "2",
+        "Kind": "0",
+        "Handler RVA": "0x007E8B96"
+      },
+      {
+        "Opcode": "0x8F",
+        "Profile name": "OP_JumpOnFalse",
+        "Width": "3",
+        "Kind": "6",
+        "Handler RVA": "0x007EA950"
+      },
+      {
+        "Opcode": "0x93",
+        "Profile name": "OP_less",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAA88"
+      },
+      {
+        "Opcode": "0x94",
+        "Profile name": "OP_BoolNot",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E870F"
+      },
+      {
+        "Opcode": "0x97",
+        "Profile name": "OP_GetString",
+        "Width": "5",
+        "Kind": "2",
+        "Handler RVA": "0x007E8187"
+      },
+      {
+        "Opcode": "0x98",
+        "Profile name": "OP_EvalLevelFieldVariable",
+        "Width": "3",
+        "Kind": "1",
+        "Handler RVA": "0x007E9A15"
+      },
+      {
+        "Opcode": "0x99",
+        "Profile name": "OP_GetLevelObject",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007E948A"
+      },
+      {
+        "Opcode": "0x9A",
+        "Profile name": "OP_inc",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAD6C"
+      },
+      {
+        "Opcode": "0x9B",
+        "Profile name": "OP_CallBuiltinMethod0",
+        "Width": "3",
+        "Kind": "4",
+        "Handler RVA": "0x007E87D4"
+      },
+      {
+        "Opcode": "0x9C",
+        "Profile name": "OP_CallBuiltinMethod1",
+        "Width": "3",
+        "Kind": "4",
+        "Handler RVA": "0x007E87D4"
+      },
+      {
+        "Opcode": "0x9D",
+        "Profile name": "OP_CallBuiltinMethod2",
+        "Width": "3",
+        "Kind": "4",
+        "Handler RVA": "0x007E87D4"
+      },
+      {
+        "Opcode": "0x9E",
+        "Profile name": "OP_CallBuiltinMethod3",
+        "Width": "3",
+        "Kind": "4",
+        "Handler RVA": "0x007E87D4"
+      },
+      {
+        "Opcode": "0x9F",
+        "Profile name": "OP_CallBuiltinMethod4",
+        "Width": "3",
+        "Kind": "4",
+        "Handler RVA": "0x007E87D4"
+      },
+      {
+        "Opcode": "0xA0",
+        "Profile name": "OP_CallBuiltinMethod5",
+        "Width": "3",
+        "Kind": "4",
+        "Handler RVA": "0x007E87D4"
+      },
+      {
+        "Opcode": "0xA4",
+        "Profile name": "OP_SetVariableField",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EB413"
+      },
+      {
+        "Opcode": "0xA6",
+        "Profile name": "OP_GetLocalFunction",
+        "Width": "4",
+        "Kind": "5",
+        "Handler RVA": "0x007E8E0E"
+      },
+      {
+        "Opcode": "0xA8",
+        "Profile name": "OP_multiply",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EB367"
+      },
+      {
+        "Opcode": "0xAC",
+        "Profile name": "OP_EvalLocalVariableRefCached0",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EA120"
+      },
+      {
+        "Opcode": "0xB1",
+        "Profile name": "OP_jump",
+        "Width": "5",
+        "Kind": "8",
+        "Handler RVA": "0x007E8701"
+      },
+      {
+        "Opcode": "0xB4",
+        "Profile name": "OP_inequality",
+        "Width": "1",
+        "Kind": "0",
+        "Handler RVA": "0x007EAD01"
+      },
+      {
+        "Opcode": "0xB5",
+        "Profile name": "OP_ScriptLocalFunctionCall",
+        "Width": "4",
+        "Kind": "5",
+        "Handler RVA": "0x007E85E4"
+      }
+    ],
+    "source-fingerprints": [
+      {
+        "Evidence component": "PRX entry, base discovery and render integration",
+        "SHA-256": "924a115d35333ab2a9def7b7ed01d1c5f43a8ee59c5e30ba04c5b9231fc10578"
+      },
+      {
+        "Evidence component": "ScriptFile, asset interception and control state",
+        "SHA-256": "a09adbb3e7bb6ccb04871cc9c82f9872d3c19b259e3814f0adfb143d098e07d9"
+      },
+      {
+        "Evidence component": "Zone-owned script arena",
+        "SHA-256": "99049a71b919656b2901ca26540d6b1f798b0a08b78a02ae8e6780bf51d80621"
+      },
+      {
+        "Evidence component": "Standalone linking and launch integration",
+        "SHA-256": "0d8fbc11c6e8bb41acb407faa91db81276abe230870d8774d3776f958192ad0c"
+      },
+      {
+        "Evidence component": "Binary package format and validator",
+        "SHA-256": "7b66a9eccf6e300c28c5352b05eaf461469d205e1587121863a2cdd217e71a07"
+      },
+      {
+        "Evidence component": "Payload update and retention logic",
+        "SHA-256": "7144de8831b7a2e008ba0d952df834e55ce2c760e4355220c72202168e9b5afc"
+      },
+      {
+        "Evidence component": "Compiled console compatibility profile",
+        "SHA-256": "becf920ab3309830e90ce39970a3a7fd6d3adfcfc30602f4ba761c51f94fd12f"
+      },
+      {
+        "Evidence component": "Console compiler binding definitions",
+        "SHA-256": "6b55cc137b394d9d4993e5c28ddc193c68c5aac8016e8341b1067b1b02f457b8"
+      },
+      {
+        "Evidence component": "Console profile JSON",
+        "SHA-256": "b64dae5d8ae05bdf67bea681911dc0c77669e6c3f7214e26d0899e8d76d00413"
+      },
+      {
+        "Evidence component": "Binary package writer",
+        "SHA-256": "441835d0f79dc36cde611d4fca23cca925470c301a667efaf0ba9e6524218fe0"
+      },
+      {
+        "Evidence component": "Payload build and publication pipeline",
+        "SHA-256": "802a062cd6581440cef0f3555d1059efbffe5a10d12650368ef80dd461922a64"
+      },
+      {
+        "Evidence component": "Native builtin registration manifest",
+        "SHA-256": "85927796708e042ce24bc790aa6e30a8b649854c4b37e609e66bf69ef616a3ce"
+      },
+      {
+        "Evidence component": "Native signature manifest",
+        "SHA-256": "7aa3805397540a45dba2ac5fc1dbc197e9b88e57416a9b81c23d0ec3fe69ad13"
+      },
+      {
+        "Evidence component": "Loader and VM disassembly excerpts",
+        "SHA-256": "80bfdf1bbb3a97e23975cc943205a6df86fcea05c48a120d15a648c110b0e0ad"
+      },
+      {
+        "Evidence component": "Primary menu script",
+        "SHA-256": "def9b02b7f4d19848bfddabbcd28aa7fcf2873c8acb6f93d9140ba1c18633611"
+      },
+      {
+        "Evidence component": "Engine RVA definitions",
+        "SHA-256": "ff9cdb768a93d32f8a3ea16eb7be25765a277cb52767b27ae4afce9654460a91"
+      },
+      {
+        "Evidence component": "Canonical function-token table",
+        "SHA-256": "f57ce727f9af767f018293e5dfcbc97ca06ac688e7c2a76e143f5da127c1fa87"
+      }
+    ]
+  }
+}

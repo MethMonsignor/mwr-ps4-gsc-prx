@@ -1,0 +1,11 @@
+Engine role / conventional description,RVA,Neutral typedef / call label,Use,PRX typedef contract
+"Find asset header, DB_FindXAssetHeader-like",0x005B6590,FindAssetHeaderFn,Detoured by asset_lookup_hook; returns the private descriptor when eligible.,"typedef void *(*FindAssetHeaderFn)( int assetType, const char *name, int allowDefault);"
+Check default/missing asset,0x005B6E60,IsDefaultAssetFn,Detoured by asset_default_hook; returns 0 for the private load only.,"typedef int (*IsDefaultAssetFn)(int assetType, const char *name);"
+"Load/link script, Scr_LoadScript-like",0x007DAC10,LoadScriptFn,Detoured by load_script_hook; stock and custom calls use the original-function stub.,"typedef uint32_t (*LoadScriptFn)( const char *scriptName, void *callerScratch, uint32_t depth);"
+Resolve script function handle,0x007DA7E0,"GetFunctionHandleFn, get_function_handle",Direct call after custom linking; lookup by script name and canonical token.,"typedef uint32_t (*GetFunctionHandleFn)( const char *scriptName, uint32_t canonicalFunctionToken);"
+Execute script thread with self object,0x007E28C0,ExecuteThreadFn,Detoured by exec_thread_hook; launches the private main.,"typedef uint16_t (*ExecuteThreadFn)( uint32_t codeOffset, uint32_t selfObject, uint32_t argumentCount);"
+"Remove VM object reference, RemoveRefToObject-like",0x007DF9E0,"RemoveObjectReferenceFn, remove_object_reference",Direct call to release the custom returned thread-object reference. Also used by stock code on other VM objects.,typedef void (*RemoveObjectReferenceFn)(uint32_t objectId);
+Native thread-identity import thunk,0x00B17270,"CurrentThreadIdFn, current_thread_id",Direct call for engine-thread checks and allocator selection. Exact imported API name is not established here.,typedef uintptr_t (*CurrentThreadIdFn)(void);
+Zone load routine,0x00569F30,LoadZoneFn,Detoured by zone_load_hook; reservation follows normal return.,"typedef void (*LoadZoneFn)(void *blocks, void *zone);"
+Zone allocator,0x008C69A0,AllocateZoneMemoryFn,"Direct call with (capacity, 16, 0, 5).","typedef void *(*AllocateZoneMemoryFn)( size_t size, size_t alignment, int physicalType, int allocationType);"
+Pool owner release,0x008C6D20,ReleasePoolOwnerFn,Detoured by pool_release_hook; invalidates owned state before normal release.,"typedef void (*ReleasePoolOwnerFn)( void *pools, void *owner, unsigned poolIndex);"
